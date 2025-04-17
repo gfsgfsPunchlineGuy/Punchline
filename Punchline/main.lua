@@ -4,7 +4,7 @@
  --- MOD_AUTHOR: [gfsgfs for art and EricTheToon for code]
  --- MOD_DESCRIPTION: Silly lil mod for silly lil people
  --- BADGE_COLOUR: 4e215c
- --- DEPENDENCIES: [Steamodded>=1.0.0~ALPHA-0812d]
+ --- DEPENDENCIES: [Steamodded>=1.0.0~ALPHA-0812d, Talisman>=2.0.0-beta8,]
  --- PREFIX: punch
  --- PRIORITY: -69419
 ----------------------------------------------
@@ -1443,7 +1443,7 @@ SMODS.Joker {
     end,
 
     calculate = function(self, card, context)
-        -- every shop 10% chance any joker is negative
+        -- every shop 30% chance any joker is negative
         if context.reroll_shop then
             if pseudorandom('depression_neg_chance') < 0.3 then
                 function poll_edition(_key, _mod, _no_neg, _guaranteed)
