@@ -10,8 +10,8 @@ gfsgfsgdsgf
 
 Awsome Coding:
 EricTheToon
-## JOKERS
-# COMMON
+# JOKERS
+## COMMON
 Kitchen crate holster:
 
 Each 4 and 7 played together gives +10 mult 
@@ -44,7 +44,7 @@ Scoring a king and a queen adds 1 jack to your draw pile (1/4 chance to add twin
 
 2s and 10s are the same rank
 
-# UNCOMMON
+## UNCOMMON
 Vanitas:
 
 Gains +2 mult for every used consumables +4 mult for card deleted
@@ -62,7 +62,7 @@ Jena:
 Gains +20 Chips per Hands remaining on Small Blind 
 Gains X0.5 Mult per Discards remaining on Big Blind
 (Resets every boss blind)
-# RARE
+## RARE
 Triple self portrait:
  
 When a 3 of kind is scored adds a random enchantement to the first card a random edition random edition and a random seal to the thrid card
@@ -75,7 +75,7 @@ Depression:
 
 30% more chance for negative jokers to appear in shop
 
-# LEGENDARY
+## LEGENDARY
 
 Eric:
 
