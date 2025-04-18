@@ -62,6 +62,7 @@ Jena:
 Gains +20 Chips per Hands remaining on Small Blind 
 Gains X0.5 Mult per Discards remaining on Big Blind
 (Resets every boss blind)
+
 ## RARE
 Triple self portrait:
  
@@ -73,7 +74,7 @@ Converts any scored card with a non-red seal into a Red Seal
 
 Depression:
 
-30% chance a joker is negative the in shop
+10% chance a joker is negative the in shop
 
 ## LEGENDARY
 
