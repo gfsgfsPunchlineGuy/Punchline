@@ -40,5 +40,25 @@ Scoring a king and a queen adds 1 jack to your draw pile (1/4 chance to add twin
 2s and 10s are the same rank
 
 # UNCOMMON
-Vanitas
+Vanitas:
+
+Gains +2 mult for every used consumables +4 mult for card deleted
+
+Roseta stone:
+
+All spades and diamonds are considred the same suit
+
+Painter:
+
+Gains a random Edition each round its effect is doubled if it has one 1/16 chance to gain Negative which grants +1 Joker slot permanently
+
+Jena:
+
+Gains +20 Chips per Hands remaining on Small Blind 
+Gains X0.5 Mult per Discards remaining on Big Blind
+(Resets every boss blind)
+
+Triple self portrait:
+ 
+When a 3 of kind is scored adds a random enchantement to the first card a random edition random edition and a random seal to the thrid card
 
