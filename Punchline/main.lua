@@ -1549,8 +1549,8 @@ SMODS.Atlas({ key = "BlindChips", atlas_table = "ANIMATION_ATLAS", path = "Blind
 SMODS.Blind({
     loc_txt = {
         name = 'The Loser',
-        text = { 'First hand is ',
-		'lowest ranked cards' }
+        text = { 'First hand draws ',
+		'the lowest ranked cards' }
     },
     key = 'Loser',
     name = 'The Loser',
