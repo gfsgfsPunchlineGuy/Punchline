@@ -6,11 +6,10 @@ gfsgfsgdsgf
 
 Awsome Coding:
 EricTheToon
-
+# COMMON
 Kitchen crate holster - Common
 
 Each 4 and 7 played together gives +10 mult 
-
 
 The Ace - Common
 
@@ -35,3 +34,10 @@ Sell 2 Jokers to get a higher rarity Joker (Cannot make Legendaries)
 Birth Certificate - Common
 
 Scoring a king and a queen adds 1 jack to your draw pile (1/4 chance to add twins)
+
+01101010 01101111 01101011 01100101 01110010 - Common
+
+2s and 10s are the same rank
+
+# UNCOMMON
+Vanitas
