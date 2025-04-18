@@ -57,8 +57,21 @@ Jena:
 Gains +20 Chips per Hands remaining on Small Blind 
 Gains X0.5 Mult per Discards remaining on Big Blind
 (Resets every boss blind)
-
+# RARE
 Triple self portrait:
  
 When a 3 of kind is scored adds a random enchantement to the first card a random edition random edition and a random seal to the thrid card
 
+Stamp of Approval:
+
+Converts any scored card with a non-red seal into a Red Seal
+
+Depression:
+
+30% more chance for negative jokers to appear in shop
+
+#LEGENDARY
+
+Eric:
+
+Creates a clone of 1 random Consumables Cards or Jokers in possession at the start of every round
