@@ -80,6 +80,7 @@ Depression:
 Eric:
 
 Creates a clone of 1 random Consumables Cards or Jokers in possession at the start of every round
+
 #BLINDS
 The Loser:
 
