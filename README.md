@@ -81,7 +81,7 @@ Eric:
 
 Creates a clone of 1 random Consumables Cards or Jokers in possession at the start of every round
 
-#BLINDS
+# BLINDS
 The Loser:
 
 First hand draws the lowest ranked cards
