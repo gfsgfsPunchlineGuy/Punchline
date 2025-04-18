@@ -1,6 +1,7 @@
 ## Requires [Steamodded](https://github.com/Steamodded/smods/wiki/) and [Talisman](https://github.com/SpectralPack/Talisman/tree/main?tab=readme-ov-file)
 # Punchline
-A balatro mod in beta
+A balatro mod (still in beta)
+A silly lil mod for silly lil people
 
 Art and idea :
 gfsgfsgdsgf
