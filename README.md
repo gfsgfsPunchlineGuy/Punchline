@@ -7,37 +7,38 @@ gfsgfsgdsgf
 Awsome Coding:
 EricTheToon
 # COMMON
-Kitchen crate holster - Common
+Kitchen crate holster:
 
 Each 4 and 7 played together gives +10 mult 
 
-The Ace - Common
+The Ace:
 
 First played ace gives X3 when scored
 
-Literally just Grindr - Common
+Literally just Grindr:
 
 If the played hand is a pair and has 2 kings or 2 jacks, 3x mult
 
-Kit joker - Common 
+Kit joker:
 
 After 2 rounds gives a random rare joker and self destructs
 
-Big michel - Common 
+Big michel:
 
 +100 mult -2 Joker slots
 
-Joke in a box - Common
+Joke in a box:
 
 Sell 2 Jokers to get a higher rarity Joker (Cannot make Legendaries)
 
-Birth Certificate - Common
+Birth Certificate:
 
 Scoring a king and a queen adds 1 jack to your draw pile (1/4 chance to add twins)
 
-01101010 01101111 01101011 01100101 01110010 - Common
+01101010 01101111 01101011 01100101 01110010:
 
 2s and 10s are the same rank
 
 # UNCOMMON
 Vanitas
+
