@@ -70,7 +70,7 @@ Depression:
 
 30% more chance for negative jokers to appear in shop
 
-#LEGENDARY
+# LEGENDARY
 
 Eric:
 
