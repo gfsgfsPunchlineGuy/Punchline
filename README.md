@@ -73,7 +73,7 @@ Converts any scored card with a non-red seal into a Red Seal
 
 Depression:
 
-30% more chance for negative jokers to appear in shop
+30% chance a joker is negative the in shop
 
 ## LEGENDARY
 
