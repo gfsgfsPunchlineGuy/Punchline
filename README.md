@@ -92,7 +92,7 @@ Must play highest ranked card in hand
 
 The Truth:
 
-Ignores all seals, enhancements, and editions for cards
+Ignores all seals, enhancements, and editions for cards played
 
 Agate Balance:
 
