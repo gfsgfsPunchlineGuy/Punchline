@@ -3,11 +3,14 @@
 A balatro mod (still in beta)
 A silly lil mod for silly lil people
 
+Adds 16 jokers and 4 blinds (for now *evil laught*)
+
 Art and idea :
 gfsgfsgdsgf
 
 Awsome Coding:
 EricTheToon
+## JOKERS
 # COMMON
 Kitchen crate holster:
 
