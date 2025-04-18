@@ -1691,7 +1691,7 @@ SMODS.Blind {
     loc_txt = {
         name = 'The Truth',
         text = { 'Ignores all seals, enhancements,',
-		'and editions for cards' }
+		'and editions for cards played' }
     },
     key = 'Truth',
     name = 'The Truth',
