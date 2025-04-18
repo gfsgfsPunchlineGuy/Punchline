@@ -1431,7 +1431,7 @@ SMODS.Joker {
         ['en-us'] = {
             name = "Depression",
             text = {
-                "{C:attention}30%{} chance a joker is {C:dark_edition}negative{} in the shop ",
+                "{C:attention}10%{} chance a joker is {C:dark_edition}negative{} in the shop ",
             }
         }
     },
@@ -1445,7 +1445,7 @@ SMODS.Joker {
     calculate = function(self, card, context)
         -- every shop 30% chance any joker is negative
         if context.reroll_shop then
-            if pseudorandom('depression_neg_chance') < 0.3 then
+            if pseudorandom('depression_neg_chance') < 0.1 then
                 function poll_edition(_key, _mod, _no_neg, _guaranteed)
                     return {negative=true}
                 end
