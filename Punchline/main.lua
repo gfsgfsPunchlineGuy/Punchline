@@ -1431,7 +1431,7 @@ SMODS.Joker {
         ['en-us'] = {
             name = "Depression",
             text = {
-                "{C:attention}30%{} more chance for {C:dark_edition}negative{} jokers to appear in shop",
+                "{C:attention}30%{} chance a joker is {C:dark_edition}negative{} in the shop ",
             }
         }
     },
