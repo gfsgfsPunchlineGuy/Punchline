@@ -55,7 +55,7 @@ All spades and diamonds are considred the same suit
 
 Painter:
 
-Gains a random Edition each round its effect is doubled if it has one 1/16 chance to gain Negative which grants +1 Joker slot permanently
+Gains a random Edition each round its effect is doubled it has 1/16 chance to gain Negative which grants +1 Joker slot permanently
 
 Jena:
 
