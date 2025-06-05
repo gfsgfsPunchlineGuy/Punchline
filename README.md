@@ -1,2 +1,2 @@
-# Example-Mod
-An example of a Joker for Balatro.
+# PunchlineMod
+38 jokers 4 blind and NEW never seen before consumables (avaible now!!!)
