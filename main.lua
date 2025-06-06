@@ -4749,7 +4749,7 @@ SMODS.Blind {
     boss_colour = HEX("d7cc0d"),
     atlas = "BlindChips",
     pos = { x = 0, y = 25 },
-    dollars = 5,
+    dollars = 8,
 
     drawn_to_hand = function(self)
         self:sync_remaining_uses()
