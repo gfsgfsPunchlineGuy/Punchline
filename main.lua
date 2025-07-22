@@ -3174,7 +3174,7 @@ SMODS.Joker {
         }
     },
     rarity = 4,
-    cost = 24,
+    cost = 20,
     atlas = 'Jokers',
     pos = { x = 2, y = 7 },
 	soul_pos = { x = 1, y = 7},
@@ -3236,7 +3236,7 @@ SMODS.Joker{
   atlas = "Jokers", 
   pos = {x = 4, y = 7},
   soul_pos = {x = 3, y = 7},
-  cost = 25,
+  cost = 20,
   unlocked = true,
   discovered = false,
   eternal_compat = true,
