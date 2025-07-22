@@ -2781,7 +2781,7 @@ SMODS.Joker {
         }
     },
     rarity = 3,
-    cost = 10,
+    cost = 8,
     atlas = 'Jokers',
     pos = { x = 3, y = 3 },
     config = {
@@ -2851,7 +2851,7 @@ SMODS.Joker {
     rarity = 3,
     config = {},
     blueprint_compat = true,
-    cost = 12,
+    cost = 8,
     loc_vars = function(self, info_queue, card)
         if G.GAME.last_bought.card ~= nil then
             local copied_key = G.GAME.last_bought.card.config.center.key
