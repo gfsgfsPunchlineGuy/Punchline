@@ -1595,7 +1595,7 @@ SMODS.Joker {
         }
     },
     rarity = 2,
-    cost = 10,
+    cost = 7,
     atlas = 'Jokers',
     pos = { x = 8, y = 4 },
     config = {
@@ -1677,7 +1677,7 @@ SMODS.Joker {
         }
     },
     rarity = 2,
-    cost = 4,
+    cost = 5,
     atlas = 'Jokers',
     pos = { x = 9, y = 3 },
     blueprint_compat = true,
@@ -1755,7 +1755,7 @@ SMODS.Joker {
         }
     },
     rarity = 2,
-    cost = 10,
+    cost = 7,
     atlas = 'Jokers',
     pos = { x = 4, y = 5 },
     config = {
@@ -1808,7 +1808,7 @@ SMODS.Joker {
         }
     },
     rarity = 2,
-    cost = 10,
+    cost = 7,
     atlas = 'Jokers',
     pos = { x = 7, y = 5 },
     config = {
