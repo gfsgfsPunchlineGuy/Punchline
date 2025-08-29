@@ -816,7 +816,7 @@ SMODS.Joker {
             "Earn {C:money}$#1#{} for each {C:attention}unscoring{} Joker and Card",
         }
     },
-    rarity = 1,
+    rarity = 2,
     cost = 5,
     atlas = 'Jokers',
     pos = { x = 9, y = 4 },
@@ -5251,3 +5251,4 @@ SMODS.Edition({
 
 ----------------------------------------------
 ------------MOD CODE END----------------------
+
