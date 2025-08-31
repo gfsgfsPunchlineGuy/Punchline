@@ -39,12 +39,32 @@ function loc_colour(_c, _default)
     return punch(_c, _default)
 end
 
+SMODS.current_mod.config_tab = function()
+    local scale = 5/6
+    return {n=G.UIT.ROOT, config = {align = "cl", minh = G.ROOM.T.h*0.25, padding = 0.0, r = 0.1, colour = G.C.GREY}, nodes = {
+        {n = G.UIT.R, config = { padding = 0.05 }, nodes = {
+            {n = G.UIT.C, config = { minw = G.ROOM.T.w*0.25, padding = 0.05 }, nodes = {
+                create_toggle{ label = "Toggle logo", info = {"Enable the logo"}, active_colour = Punchline.badge_colour, ref_table = Punchline.config, ref_value = "logo" },
+            }}
+        }}
+    }}
+end
+
+
+Punchline = SMODS.current_mod
+-- Load Options
+Punchline_config = Punchline.config
+-- This will save the current state even when settings are modified
+Punchline.enabled = copy_table(Punchline_config)
+
+local config = SMODS.current_mod.config
 SMODS.Atlas{
     key = 'Jokers', 
     path = 'Jokers.png', 
     px = 71, 
     py = 95 
 	}
+if config.logo ~= false then					
 SMODS.Atlas{
 	key = 'balatro',
     path = 'balatro.png',
@@ -53,6 +73,7 @@ SMODS.Atlas{
     prefix_config = {key = false}
 
 }
+end
 SMODS.Atlas({
 	key = "modicon",
 	path = "hd_icon.png",
@@ -816,64 +837,65 @@ SMODS.Joker {
             "Earn {C:money}$#1#{} for each {C:attention}unscoring{} Joker and Card",
         }
     },
-    rarity = 2,
+    rarity = 1,
     cost = 5,
     atlas = 'Jokers',
     pos = { x = 9, y = 4 },
     config = {
         extra = {
             money = 1,
+			triggers = 0,
         },
     },
     blueprint_compat = true,
 
     loc_vars = function(self, info_queue, card)
         return {
-            vars = { card.ability.extra.money, card.ability.extra.cards_triggered }
+            vars = { card.ability.extra.money }
         }
     end,
 
     calculate = function(self, card, context)
-    -- Track unscored cards individually
-    if context.individual and context.cardarea == "unscored" then
-        return {
-            dollars = card.ability.extra.money
-        }
-    end
-
-    -- At start of scoring: reset trigger tracking
-    if context.before then
-        for _, j in ipairs(G.jokers.cards) do
-            if j.ability then
-                j.ability.extra = j.ability.extra or {}
-                j.ability.extra._media_triggered = false
-            end
+        -- Track unscored cards individually
+        if context.individual and context.cardarea == "unscored" then
+            --print("[Missing Media Joker] Unscored card detected:", context.card and context.card:get_id() or "Unknown Card")
+			card.ability.triggers = card.ability.triggers - 1
+            return {
+                dollars = card.ability.extra.money
+            }
         end
-    end
 
-    -- Mark jokers as triggered (excluding self)
-    if context.post_trigger and context.other_joker and context.other_joker ~= card then
-        if context.other_joker.ability then
-            context.other_joker.ability.extra = context.other_joker.ability.extra or {}
-            context.other_joker.ability.extra._media_triggered = true
+        -- At start of scoring: reset trigger tracking
+        if context.before then
+			--print ("triggers set to 0")
+							 
+            card.ability.triggers = 0
+														
+			   
         end
-    end
+	   
 
-    -- After scoring: grant money for each untriggered joker (excluding self)
-    if context.after then
-        for _, j in ipairs(G.jokers.cards) do
-            if j ~= card and j.ability and not j.ability.eternal then
-                j.ability.extra = j.ability.extra or {}
-                if not j.ability.extra._media_triggered then
-                    ease_dollars(card.ability.extra.money)
-                end
-            end
+        -- Mark other Jokers as triggered
+        if context.post_trigger and not context.blueprint then
+			--print ("a joker triggered")
+            card.ability.triggers = card.ability.triggers + 1
+																	 
         end
-    end
-end,
+	   
+
+        -- After scoring: grant money for each untriggered Joker (excluding self)
+        if context.after then
+			for _, joker in ipairs(G.jokers.cards) do
+				card.ability.triggers = card.ability.triggers - 1
+			end
+			if card.ability.triggers < 0 then
+				ease_dollars(card.ability.extra.money * card.ability.triggers * -1 -1)
+			end
+			   
+        end
+    end,
+	
 }
-
-
 
 SMODS.Joker{
     key = 'miss',
@@ -1087,6 +1109,10 @@ function Card:is_suit(suit, bypass_debuff, flush_calc)
 	-- Check if this card is a Stone card (hidden identity)
     if self.config and self.config.center == G.P_CENTERS.m_stone then
         self.base.suit = nil
+    end
+	-- Wild cards also need to exist too mb
+	if self.config and not self.debuff and self.config.center == G.P_CENTERS.m_wild then
+        return true
     end
 	
     -- Check if the 'j_punch_stone' card is present
@@ -3421,51 +3447,92 @@ SMODS.Consumable{
     config = {
         extra = {
             cards = 2, -- Jokers value
-            odds = 8, -- Odds (3 in 8 chance by default)
+            odds = 8, -- Odds (1 in 8 chance by default)
         }
     },
     loc_vars = function(self, info_queue, center)
         if center and center.ability and center.ability.extra then
-            return {vars = {center.ability.extra.cards, center.ability.extra.odds, G.GAME.probabilities.normal }} 
+            return {vars = {center.ability.extra.cards, center.ability.extra.odds, G.GAME.probabilities.normal}}
         end
         return {vars = {}}
     end,
     can_use = function(self, card)
-        return #G.jokers.cards > 0
+        -- Only allow use if at least one joker has no edition
+        for _, joker in ipairs(G.jokers.cards) do
+            if not joker.edition then
+                return true
+            end
+        end
+        return false
     end,
     use = function(self, card, area, copier)
         if not (G and card and card.ability and card.ability.extra) then
             print("Invalid game state or consumable configuration.")
             return
         end
-        
+
         local maxCards = card.ability.extra.cards or 2
         local odds = card.ability.extra.odds or 8
         local selectedJokers = {}
 
-        -- Collect all jokers as potential targets
+        -- Collect only jokers without an edition
         for _, joker in ipairs(G.jokers.cards) do
-            table.insert(selectedJokers, joker)
+            if not joker.edition then
+                table.insert(selectedJokers, joker)
+            end
         end
 
         if #selectedJokers == 0 then
-            print("No jokers available for Stone Wheel.")
+            print("No eligible jokers available for Stone Wheel.")
             return
         end
 
         -- Randomly select the specified number of jokers
         local targetCount = math.min(#selectedJokers, maxCards)
-		if pseudorandom('death') < G.GAME.probabilities.normal/card.ability.extra.odds then
-			for i = 1, targetCount do
-				local randomIndex = math.random(#selectedJokers)
-				local target = selectedJokers[randomIndex]
-				table.remove(selectedJokers, randomIndex)
+        if pseudorandom('death') < G.GAME.probabilities.normal / odds then
+            for i = 1, targetCount do
+                if #selectedJokers == 0 then break end
+                local randomIndex = math.random(#selectedJokers)
+                local target = selectedJokers[randomIndex]
+                table.remove(selectedJokers, randomIndex)
 
-            -- Apply edition with chance
+                -- Apply random edition
                 target:set_edition(poll_edition('random key', nil, false, true))
             end
+        else
+            -- Failure case (above the card)
+            G.E_MANAGER:add_event(Event({
+                trigger = 'after',
+                delay = 0.4,
+                func = function()
+                    attention_text({
+                        text = localize('k_nope_ex'),
+                        scale = 1.3,
+                        hold = 1.4,
+                        major = card,
+                        backdrop_colour = G.C.SECONDARY_SET.Tarot,
+                        align = 'tm',
+                        offset = {x = 0, y = -0.2},
+                        silent = true
+                    })
+                    G.E_MANAGER:add_event(Event({
+                        trigger = 'after',
+                        delay = 0.06 * G.SETTINGS.GAMESPEED,
+                        blockable = false,
+                        blocking = false,
+                        func = function()
+                            play_sound('tarot2', 0.76, 0.4)
+                            return true
+                        end
+                    }))
+                    play_sound('tarot2', 1, 0.4)
+                    card:juice_up(0.3, 0.5)
+                    return true
+                end
+            }))
         end
-    end,
+        delay(0.6)
+    end
 }
 
 -- yoooooo dr bright real!!
@@ -3600,6 +3667,17 @@ SMODS.Consumable{
                 -- Destruction Chance
                 if rand_value < G.GAME.probabilities.normal / odds_d then
                     target:start_dissolve()
+
+                    -- Notify Jokers of destruction
+                    if target.playing_card then
+                        for _, joker in ipairs(G.jokers.cards) do
+                            eval_card(joker, {
+                                cardarea = G.jokers,
+                                remove_playing_cards = true,
+                                removed = {target}
+                            })
+                        end
+                    end
                 end
             end
 
@@ -5251,4 +5329,3 @@ SMODS.Edition({
 
 ----------------------------------------------
 ------------MOD CODE END----------------------
-
