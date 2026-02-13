@@ -179,6 +179,11 @@ loc_vars = function(self, info_queue, card)
     end
   end
  }
+ SMODS.Sound({
+	key = "grindr",
+	path = "grindr.ogg",
+})	
+
 SMODS.Joker({
     key = 'grindr',
     loc_txt = {
@@ -239,9 +244,10 @@ SMODS.Joker({
         if context.joker_main and card.ability.extra.charge >= 1 then
             -- Reset charge counter after activation
             card.ability.extra.charge = 0
+			play_sound("punch_grindr")
             return {
                 x_mult = card.ability.extra.Xmult,
-                card = self
+                card = self,
             }
         end
     end
@@ -1693,6 +1699,7 @@ SMODS.Joker {
 		end
     end,
 }
+if not ((SMODS.Mods["Cryptid"] or {}).can_load) then
 SMODS.Joker {
     key = 'luck',
     loc_txt = {
@@ -1771,6 +1778,7 @@ SMODS.Joker {
         end
     end
 }
+end
 SMODS.Joker {
     key = 'pyrite', 
     loc_txt = {
@@ -1963,6 +1971,186 @@ function Game:update(dt)
         end
     end
 end
+
+SMODS.Joker({
+    key = 'handicapped',
+    loc_txt = {
+        name = 'Handicapped Spot',
+        text = {
+            "{C:mult}Disabled{} cards {C:attention}held{} in hand give {C:money}$#1#{}"
+        }
+    },
+    rarity = 2,
+    cost = 5,
+    atlas = 'Jokers',
+    pos = { x = 6, y = 2 },
+    blueprint_compat = true,
+
+    config = {
+        extra = {
+            dollars = 2
+        },
+    },
+
+    loc_vars = function(self, info_queue, card)
+        return {
+            vars = { card.ability.extra.dollars }
+        }
+    end,
+
+    calculate = function(self, card, context)
+        -- trigger once per scoring hand, based on how many debuffed cards are held
+        if context.joker_main and not context.end_of_round then
+            local debuffed = 0
+            for _, hand_card in ipairs(G.hand.cards) do
+                if hand_card.debuff then
+                    debuffed = debuffed + 1
+                end
+            end
+
+            if debuffed > 0 then
+                return {
+                    dollars = card.ability.extra.dollars * debuffed,
+                    card = card,
+                }
+            end
+        end
+    end
+})
+
+
+SMODS.Joker{
+    key = "freak",
+    loc_txt = {
+        name = "Freak Accident",
+        text = {
+            "{X:mult,C:white}X#1#{} for every {C:attention}hand size{} Below {C:attention}#2#{}",
+            "{C:inactive}Currently {X:mult,C:white}X#3#{C:inactive} Mult",
+        }
+    },
+    rarity = 2,
+    atlas = "Jokers",
+    pos = { x = 8, y = 2 },
+    cost = 10,
+    blueprint_compat = false,
+    config = { 
+        extra = {
+            Xmult = 1,
+            Xmult_add = 2.5,
+            hand_size = 8,
+        }
+    },
+
+    loc_vars = function(self, info_queue, card)
+        return {
+            vars = { card.ability.extra.Xmult_add, card.ability.extra.hand_size, card.ability.extra.Xmult }
+        }
+    end,
+    
+    -- update Xmult based on current hand size
+    update = function(self, card)
+        if G.STAGE == G.STAGES.RUN then
+			if not next(SMODS.find_card('j_punch_freak')) then
+				card.ability.extra.hand_size = G.hand.config.card_limit
+			end
+            local hand_diff = card.ability.extra.hand_size - G.hand.config.card_limit
+            if hand_diff > 0 then
+                card.ability.extra.Xmult = hand_diff * card.ability.extra.Xmult_add
+            else
+                card.ability.extra.Xmult = 1
+            end
+        end
+    end,
+    
+    add_to_deck = function(self, card)
+        card.ability.extra.hand_size = G.hand.config.card_limit
+    end,
+
+    calculate = function(self, card, context)
+        if context.joker_main then
+            return {
+                message = localize{type='variable', key='a_xmult', vars={card.ability.extra.Xmult}},
+                Xmult_mod = card.ability.extra.Xmult,
+            } 
+        end
+    end
+}
+
+SMODS.Joker({
+    key = 'family',
+    loc_txt = {
+        name = 'My dad, me and my friend :)',
+        text = {
+            "If the played hand is a {C:attention}Full House{} with only {C:attention}Face{} cards",
+            "And contains at least {C:attention}2 Jacks{}",
+            "{C:mult}Destroy{} the other {C:attention}Face{} cards and create a {C:spectral}Cryptid{} card"
+        }
+    },
+    rarity = 2,
+    cost = 7,
+    atlas = 'Jokers',
+    pos = { x = 5, y = 2 },
+    blueprint_compat = true,
+	
+	loc_vars = function(self, info_queue, center)
+		info_queue[#info_queue + 1] = G.P_CENTERS.c_cryptid
+        return {vars = {}}
+    end,
+
+    calculate = function(self, card, context)
+        if context.joker_main and context.scoring_name == "Full House" then
+            local jack_count = 0
+            local all_faces = true
+            local to_destroy = {}
+
+            for _, scoring_card in ipairs(context.scoring_hand) do
+                local id = scoring_card:get_id()
+                if id == 11 then
+                    jack_count = jack_count + 1
+                end
+                if id < 11 or id > 13 then
+                    all_faces = false
+                end
+            end
+
+            if all_faces and jack_count >= 2 then
+                for _, scoring_card in ipairs(context.scoring_hand) do
+                    if scoring_card:get_id() ~= 11 then
+                        table.insert(to_destroy, scoring_card)
+                    end
+                end
+
+                G.E_MANAGER:add_event(Event({
+                    func = function()
+                        for _, destroyed in ipairs(to_destroy) do
+                            destroyed:start_dissolve()
+
+                            -- Ensure other Jokers get notified of the destruction
+                            if destroyed.playing_card then
+                                for j = 1, #G.jokers.cards do
+                                    eval_card(G.jokers.cards[j], {
+                                        cardarea = G.jokers,
+                                        remove_playing_cards = true,
+                                        removed = {destroyed}
+                                    })
+                                end
+                            end
+                        end
+
+                        -- Spawn the Cryptid spectral card
+                        local cryptid = create_card("Spectral", G.consumeables, nil, nil, nil, nil, "c_cryptid")
+                        cryptid:add_to_deck()
+                        G.consumeables:emplace(cryptid)
+
+                        card:juice_up()
+                        return true
+                    end,
+                    delay = 0.5
+                }))
+            end
+        end
+    end
+})
 --[[
 SMODS.Joker {
     key = 'dust',
@@ -1996,6 +2184,10 @@ SMODS.Joker {
     end,
 
     calculate = function(self, card, context)
+		if context.first_hand_drawn and not context.blueprint then
+            local eval = function() return G.GAME.current_round.hands_played == 0 and not G.RESET_JIGGLES end
+            juice_card_until(card, eval, true)
+        end
 		if context.joker_main then
 			if G.GAME.current_round.hands_played == 0 and context.full_hand then
 				local first_card = context.full_hand[1]
@@ -3544,63 +3736,81 @@ SMODS.Consumable{
     loc_txt = {
         name = 'SCP-963-1',
         text = {
-            'Cannot be used',
-            'Converts played cards to {C:attention}#1#{}',
-			'{C:green}#4# in #5#{} chance to destroy them instead',
-            'For the next {C:attention}#2#{} hands',
+            '{C:mult}Destroy {C:attention}#1#{} selected things',
+            'Create a pack for that respective thing',
         }
     },
     config = {
-        extra = { suit = nil, hands = 3, current_hand = 0, odds = 4 },
+        extra = {
+            cards = 2,
+        }
     },
     loc_vars = function(self, info_queue, center)
         if center and center.ability and center.ability.extra then
-            local suit = center.ability.extra.suit or "First played Suit"
-            local hands = center.ability.extra.hands
-            local current_hand = center.ability.extra.current_hand
-            local odds = center.ability.extra.odds
-            return {vars = {suit, hands, current_hand, G.GAME.probabilities.normal, odds}}
+            return {vars = {center.ability.extra.cards-1}}
         end
         return {vars = {}}
     end,
     can_use = function(self, card)
-        return false
-    end,
-    calculate = function(self, card, context)
-        if not (card and card.ability and card.ability.extra) then return end
-        local extra = card.ability.extra
+        if not G or not card or not card.ability then return false end
+        local maxCards = card.ability.extra.cards
+        local count = 0
 
-        local function detect_suit(c)
-            if c:is_suit("Hearts") then return "Hearts" end
-            if c:is_suit("Diamonds") then return "Diamonds" end
-            if c:is_suit("Clubs") then return "Clubs" end
-            if c:is_suit("Spades") then return "Spades" end
-            return nil
+        for _, group in ipairs({G.hand, G.jokers, G.consumeables, G.pack_cards}) do
+            if group and group.highlighted then
+                count = count + #group.highlighted
+            end
         end
 
-        if context.cardarea == G.consumeables and context.before and not context.blueprint then 
-            extra.current_hand = extra.current_hand + 1
-            if extra.current_hand == 1 and context.scoring_hand and #context.scoring_hand > 0 and not extra.suit then
-                extra.suit = detect_suit(context.scoring_hand[1]) or "None"
-                return
-            end
-
-            if extra.current_hand >= 2 and extra.current_hand <= 4 then
-                for _, c in ipairs(context.scoring_hand) do
-                    if pseudorandom('SCP') < G.GAME.probabilities.normal/card.ability.extra.odds then
-                        c:start_dissolve()
-                    else
-                        SMODS.change_base(c, extra.suit)
-                    end
-                end
-                extra.hands = extra.hands - 1
-            end
-
-            if extra.current_hand == 5 or extra.hands == 0 then
-                card:start_dissolve()
+        return count > 0 and count <= maxCards
+    end,
+    use = function(self, card, area, copier)
+    local selected = {}
+    for _, group in ipairs({G.hand, G.jokers, G.consumeables, G.pack_cards}) do
+        if group and group.highlighted then
+            for _, c in ipairs(group.highlighted) do
+                table.insert(selected, c)
             end
         end
     end
+
+    for _, target in ipairs(selected) do
+        local pack_type
+        if target.config and target.config.center and target.config.center.set then
+            local set = target.config.center.set
+
+            -- Print the set of the destroyed card
+            print("Destroyed card from set:", set)-- use to find out the set 
+
+            if set == 'Joker' then
+                add_tag(Tag('tag_buffoon'))
+            elseif set == 'Spectral' then
+                add_tag(Tag('tag_ethereal'))
+            elseif set == 'Tarot' then
+                add_tag(Tag('tag_charm'))
+            elseif set == 'Planet' then
+                add_tag(Tag('tag_meteor'))
+            elseif set == 'Relics' then
+                add_tag(Tag('tag_punch_RelicTag1'))
+			elseif set == 'Default' then
+				add_tag(Tag('tag_standard'))
+			elseif set == 'Enhanced' then
+				add_tag(Tag('tag_standard'))
+			elseif set == 'LTMConsumableType' then
+				add_tag(Tag('tag_fn_LTMTag1'))
+			elseif set == 'Code' then
+				add_tag(Tag('tag_cry_console'))
+			elseif set == 'Loteria' then
+				add_tag(Tag('tag_ortalab_loteria'))
+			elseif set == 'paperback_minor_arcana' then
+				add_tag(Tag('tag_paperback_divination'))
+            end
+        end
+
+        -- Destroy card
+        target:start_dissolve()
+    end
+end
 }
 
 -- hey this book was in Fortnite! It's ash ketchums backbling!
@@ -3762,7 +3972,8 @@ SMODS.Consumable{
     loc_txt = {
         name = 'Ea-nāṣir\'s Tablet',
         text = {
-            'Refund half the price of all used {C:punch_relics}Relics'
+            'Refund double the price of all used {C:punch_relics}Relics',
+			'{C:inactive}Currently{} {C:money}$#1#{}',
         }
     },
     config = { extra = { dollars = 0 } },
@@ -3770,43 +3981,50 @@ SMODS.Consumable{
     loc_vars = function(self, info_queue, card)
         return { vars = { card.ability.extra.dollars } }
     end,
+	
+	update = function(self, card, dt)
+		local usage = G.GAME.consumeable_usage or {}
+		local wheel = (usage['c_punch_wheel'] and usage['c_punch_wheel'].count) or 0
+		local egg = (usage['c_punch_egg'] and usage['c_punch_egg'].count) or 0
+		local necro = (usage['c_punch_necronomicon'] and usage['c_punch_necronomicon'].count) or 0
+		local tablet = (usage['c_punch_tablet'] and usage['c_punch_tablet'].count) or 0
+		local holy = (usage['c_punch_holy'] and usage['c_punch_holy'].count) or 0
+		local pandora = (usage['c_punch_pandora'] and usage['c_punch_pandora'].count) or 0
+		local mask = (usage['c_punch_mask'] and usage['c_punch_mask'].count) or 0
+		local grail = (usage['c_punch_grail'] and usage['c_punch_grail'].count) or 0
+		local paw = (usage['c_punch_paw'] and usage['c_punch_paw'].count) or 0
+		local paws = paw / 5
+		local lamp = (usage['c_punch_lamp'] and usage['c_punch_lamp'].count) or 0
+		local lamps = lamp / 3
+		local link = (usage['c_punch_link'] and usage['c_punch_link'].count) or 0
+		local space = (usage['c_punch_space'] and usage['c_punch_space'].count) or 0
+		local corn = (usage['c_punch_corn'] and usage['c_punch_corn'].count) or 0
+		local xiu = (usage['c_punch_xiu'] and usage['c_punch_xiu'].count) or 0
+		local scp = (usage['c_punch_scp'] and usage['c_punch_scp'].count) or 0
+		local phil = (usage['c_punch_phil'] and usage['c_punch_phil'].count) or 0
+	
+		local totals = tablet + egg + necro + wheel + holy + pandora + mask + grail + paws + lamps + link + space + corn + xiu + scp + phil
+		local total_spent = totals * 3
+
+		-- Calculate refund (double of total spent)
+		local refund = math.floor(total_spent * 2)
+		card.ability.extra.dollars = refund
+	end,
 
     can_use = function(self, card)
         return true -- Always usable
     end,
 
     use = function(self, card, area, copier)
-    -- Ensure the table exists
-    local usage = G.GAME.consumeable_usage or {}
-    
-    -- Count all used relics (3$ each)
-    local wheel = (usage['c_punch_wheel'] and usage['c_punch_wheel'].count) or 0
-    local egg = (usage['c_punch_egg'] and usage['c_punch_egg'].count) or 0
-    local necro = (usage['c_punch_necronomicon'] and usage['c_punch_necronomicon'].count) or 0
-    local tablet = (usage['c_punch_tablet'] and usage['c_punch_tablet'].count) or 0
-	local holy = (usage['c_punch_holy'] and usage['c_punch_holy'].count) or 0
-	local pandora = (usage['c_punch_pandora'] and usage['c_punch_pandora'].count) or 0
-	local mask = (usage['c_punch_mask'] and usage['c_punch_mask'].count) or 0
-    local grail = (usage['c_punch_grail'] and usage['c_punch_grail'].count) or 0
-	local paw = (usage['c_punch_paw'] and usage['c_punch_paw'].count) or 0
-	local paws = paw / 5
-	
-    local totals = tablet + egg + necro + wheel + holy + pandora + mask + grail + paws
-    local total_spent = totals * 3
-
-    -- Calculate refund (half of total spent)
-    local refund = math.floor(total_spent / 2)
-    card.ability.extra.dollars = refund
 
     -- Apply the refund immediately
-    if refund > 0 then
-        ease_dollars(refund)
-        G.GAME.dollar_buffer = (G.GAME.dollar_buffer or 0) + refund
-    else
-        print("No relics used. No refund. this shouldnt happen?")
+    if card.ability.extra.dollars > 0 then
+        ease_dollars(card.ability.extra.dollars)
+        G.GAME.dollar_buffer = (G.GAME.dollar_buffer or 0) + card.ability.extra.dollars
     end
 
     -- Reset all relic counts
+	local usage = G.GAME.consumeable_usage or {}
     if usage['c_punch_wheel'] then usage['c_punch_wheel'].count = 0 end
     if usage['c_punch_egg'] then usage['c_punch_egg'].count = 0 end
     if usage['c_punch_necronomicon'] then usage['c_punch_necronomicon'].count = 0 end
@@ -3816,6 +4034,14 @@ SMODS.Consumable{
 	if usage['c_punch_mask'] then usage['c_punch_mask'].count = 0 end
 	if usage['c_punch_grail'] then usage['c_punch_grail'].count = 0 end
 	if usage['c_punch_paw'] then usage['c_punch_paw'].count = 0 end
+	if usage['c_punch_lamp'] then usage['c_punch_lamp'].count = 0 end
+	if usage['c_punch_link'] then usage['c_punch_link'].count = 0 end
+	if usage['c_punch_space'] then usage['c_punch_space'].count = 0 end
+	if usage['c_punch_corn'] then usage['c_punch_corn'].count = 0 end
+	if usage['c_punch_xiu'] then usage['c_punch_xiu'].count = 0 end
+	if usage['c_punch_scp'] then usage['c_punch_scp'].count = 0 end
+	if usage['c_punch_phil'] then usage['c_punch_phil'].count = 0 end
+	card.ability.extra.dollars = 0
 end,
 }
 --'Tis but a scratch.
@@ -3985,16 +4211,19 @@ SMODS.Consumable{
 
             -- Find highest and lowest card IDs in hand
             for _, hand_card in ipairs(G.hand.cards) do
-                local id = hand_card:get_id()
-                if id then
-                    if id > highest_id then highest_id = id end
-                    if id < lowest_id then lowest_id = id end
-                end
-            end
+				if hand_card.ability.name ~= 'Stone Card' then
+					local id = hand_card:get_id()
+					if id then
+						if id > highest_id then highest_id = id end
+						if id < lowest_id then lowest_id = id end
+					end
+				end
+			end
 
             if highest_id == 0 or lowest_id == math.huge then return end
 
             local function id_to_rank(id)
+				if id == 10 then return 'T' end
                 if id == 11 then return 'J' end
                 if id == 12 then return 'Q' end
                 if id == 13 then return 'K' end
@@ -4141,6 +4370,166 @@ SMODS.Consumable{
     end,
 }
 
+-----------------------------------------
+-- ALWAYS INIT MASKS BEFORE ANYTHING LOADS
+-----------------------------------------
+local function init_masks()
+    if not G.GAME_Mask1 then
+        G.GAME_Mask1 = math.random(2, 14)
+    end
+
+    if not G.GAME_Mask2 then
+        repeat
+            G.GAME_Mask2 = math.random(2, 14)
+        until G.GAME_Mask2 ~= G.GAME_Mask1
+    end
+end
+
+init_masks()
+
+-----------------------------------------
+-- RANDOMIZER FUNCTION
+-----------------------------------------
+local function randomize_masks()
+    G.GAME_Mask1 = math.random(2, 14)
+
+    repeat
+        G.GAME_Mask2 = math.random(2, 14)
+    until G.GAME_Mask2 ~= G.GAME_Mask1
+end
+
+-----------------------------------------
+-- HOOKS
+-----------------------------------------
+
+-- Start run hook
+local start_run_ref = Game.start_run
+function Game:start_run(args)
+    start_run_ref(self, args)
+
+    -- If there isn’t already a punch mask somewhere randomize
+    if not next(SMODS.find_card('c_punch_mask')) then
+        randomize_masks()
+    end
+end
+
+-- End of round hook
+local end_round_original = end_round
+function end_round()
+    end_round_original()
+    randomize_masks()
+end
+
+
+-----------------------------------------
+-- STONE MASK CONSUMABLE
+-----------------------------------------
+SMODS.Consumable{
+    key = 'mask',
+    set = 'Relics',
+    atlas = 'Consumables',
+    pos = {x = 2, y = 1},
+
+    loc_txt = {
+        name = 'Stone Mask',
+        text = {
+            'Changes all {C:attention}#1#\'s{} in hand to {C:attention}#2#\'s{}',
+        }
+    },
+
+    -----------------------------------------
+    -- LOC VARS ALWAYS PULL FROM GLOBALS
+    -----------------------------------------
+    loc_vars = function(self, info_queue, card)
+        local names = { [11]='J', [12]='Q', [13]='K', [14]='A' }
+
+        local r1 = G.GAME_Mask1
+        local r2 = G.GAME_Mask2
+
+        return {
+            vars = {
+                names[r1] or r1,
+                names[r2] or r2,
+            }
+        }
+    end,
+
+    -----------------------------------------
+    -- UPDATE CONFIG WHEN HAND IS DRAWN
+    -----------------------------------------
+    calculate = function(self, card, context)
+        if context.hand_drawn then
+            
+            -- Randomize mask1 to be an ID of a random card in hand
+            if G and G.hand and G.hand.cards then
+                local ids = {}
+
+                for _, c in ipairs(G.hand.cards) do
+                    ids[#ids+1] = c:get_id()
+                end
+
+                if #ids > 0 then
+                    G.GAME_Mask1 = ids[math.random(#ids)]
+                end
+
+                -- Rank for conversion stays normal rank (2-14)
+                repeat
+                    G.GAME_Mask2 = math.random(2, 14)
+                until G.GAME_Mask2 ~= G.GAME_Mask1
+            end
+        end
+    end,
+
+    -----------------------------------------
+    -- CAN USE
+    -----------------------------------------
+    can_use = function(self, card)
+        return G and G.hand and #G.hand.cards > 0
+    end,
+
+    -----------------------------------------
+    -- USE EFFECT
+    -----------------------------------------
+    use = function(self, card, area, copier)
+        if not (G and G.hand and G.hand.cards) then return end
+
+        local selected_id = G.GAME_Mask1
+        local new_rank = G.GAME_Mask2
+
+        local rankname = {
+            [10] = "T", [11] = "J", [12] = "Q", [13] = "K", [14] = "A"
+        }
+
+        for _, hand_card in ipairs(G.hand.cards) do
+            if hand_card:get_id() == selected_id then
+                
+                G.E_MANAGER:add_event(Event({
+                    trigger = 'after',
+                    delay = 0.1,
+                    func = function()
+
+                        hand_card:flip()
+                        play_sound("tarot1", 1.0, 0.6)
+                        hand_card:juice_up(0.3, 0.3)
+
+                        local suit_prefix = string.sub(hand_card.base.suit, 1, 1).."_"
+                        local rank_str = rankname[new_rank] or new_rank
+                        local new_base = G.P_CARDS[suit_prefix..rank_str]
+
+                        hand_card:set_base(new_base)
+
+                        hand_card:flip()
+                        play_sound("tarot2", 1.0, 0.6)
+                        hand_card:juice_up(0.3, 0.3)
+
+                        return true
+                    end
+                }))
+            end
+        end
+    end,
+}
+
 SMODS.Consumable{
     key = 'grail',
     set = 'Relics',
@@ -4173,7 +4562,7 @@ SMODS.Consumable{
     end,
 
 
-apply_grail = function(self, card)
+	apply_grail = function(self, card)
         -- Apply to all consumables
         if G and G.consumeables and G.consumeables.cards then
             for _, consumable in ipairs(G.consumeables.cards) do
@@ -4231,17 +4620,37 @@ SMODS.Consumable{
         card.ability.extra.uses = card.ability.extra.uses - 1
         card.ability.extra.hands_add = card.ability.extra.hands_add + 1
         card.ability.extra.discards_lose = card.ability.extra.discards_lose - 1
+		if card.ability.extra.uses >= 1 then
+			local _card = create_card('Tarot', G.consumeables, nil, nil, nil, nil, 'c_punch_paw')
+			_card:add_to_deck()
+			G.consumeables:emplace(_card)
 
-        local _card = create_card('Tarot', G.consumeables, nil, nil, nil, nil, 'c_punch_paw')
-        _card:add_to_deck()
-        G.consumeables:emplace(_card)
+			_card.ability.extra.uses = card.ability.extra.uses 
+			_card.ability.extra.hands_add = card.ability.extra.hands_add
+			_card.ability.extra.discards_lose = card.ability.extra.discards_lose
+		end
+		if card.ability.extra.uses == 0 then
+			local _card = create_card('Tarot', G.consumeables, nil, nil, nil, nil, 'c_punch_paw')
+			_card:add_to_deck()
+			G.vouchers:emplace(_card)
 
-        _card.ability.extra.uses = card.ability.extra.uses 
-        _card.ability.extra.hands_add = card.ability.extra.hands_add
-        _card.ability.extra.discards_lose = card.ability.extra.discards_lose
+			_card.ability.extra.uses = card.ability.extra.uses 
+			_card.ability.extra.hands_add = card.ability.extra.hands_add
+			_card.ability.extra.discards_lose = card.ability.extra.discards_lose
+		end
     end,
 
     calculate = function(self, card, context)
+		if context.selling_self and card.ability.extra.uses < 5 then
+			local _card = create_card('Tarot', G.consumeables, nil, nil, nil, nil, 'c_punch_paw')
+			_card:add_to_deck()
+			G.vouchers:emplace(_card)
+
+			_card.ability.extra.uses = card.ability.extra.uses 
+			_card.ability.extra.hands_add = card.ability.extra.hands_add
+			_card.ability.extra.discards_lose = card.ability.extra.discards_lose
+		end
+		
         if context.setting_blind then
             G.E_MANAGER:add_event(Event({
                 trigger = 'after', delay = 0.1,
@@ -4253,72 +4662,90 @@ SMODS.Consumable{
                     return true
                 end
             }))
-			if card.ability.extra.uses == 0 then
+			if card.ability.extra.uses == 0 or card.area == G.vouchers then
 				card:start_dissolve()
 			end
         end
     end,
 }
 
-SMODS.Consumable{
-    key = 'lamp', -- key
-    set = 'Relics', -- the set of the card: corresponds to a consumable type
-    atlas = 'Consumables', -- atlas
-    pos = {x = 4, y = 1}, -- position in atlas
+SMODS.Consumable {
+    key = 'lamp',
+    set = 'Relics',
+    atlas = 'Consumables',
+    pos = {x = 4, y = 1},
     loc_txt = {
-        name = 'Genie Lamp', -- name of card
-        text = { -- text of card
+        name = 'Genie Lamp',
+        text = {
             'Meet the genie and make {C:attention}3{} wishes',
-			'Current wish: #1#',
+            'Current wish: #1#',
             '{C:attention}#2#{} wishes left',
         }
     },
     config = {
-        extra = {
-            wish = 'give me money', uses = 3, handsize = 2,  -- configurable values
-        },
+        id = nil,
+        uses = 3,
+        wish = 'give me money'
     },
+
     loc_vars = function(self, info_queue, center)
-        if center and center.ability and center.ability.extra then
-            return {vars = {center.ability.extra.wish, center.ability.extra.uses }} 
-        end
-        return {vars = {}}
+        return {vars = {center.ability.wish, center.ability.uses or 0}}
     end,
 
     can_use = function(self, card)
-        return card.ability.extra.uses > 0
+        return card.ability.uses and card.ability.uses > 0
     end,
 
     use = function(self, card, area, copier)
-		if card.ability.extra.wish == 'give me money' then
-			local reward = to_big(G.GAME.dollars) / 3
-			ease_dollars(reward)
-			card.ability.extra.uses = card.ability.extra.uses - 1
-		
-			local _card = create_card('Tarot', G.consumeables, nil, nil, nil, nil, 'c_punch_lamp')
-			_card:add_to_deck()
-			G.consumeables:emplace(_card)
+        -- Perform wish effect
+        if card.ability.wish == 'give me money' then
+            local reward = to_big(G.GAME.dollars) / 3
+            ease_dollars(reward)
+            card.ability.wish = 'give me hands'
+        elseif card.ability.wish == 'give me hands' then
+            G.GAME.round_resets.hands = G.GAME.round_resets.hands + 2
+            ease_hands_played(2)
+            card.ability.wish = 'give me handsize'
+        elseif card.ability.wish == 'give me handsize' then
+            G.hand.config.card_limit = G.hand.config.card_limit + 2
+            -- Final wish; do not respawn
+            return
+        end
 
-			_card.ability.extra.uses = card.ability.extra.uses 
-			_card.ability.extra.wish = 'give me hands'
-		end
-		
-		if card.ability.extra.wish == 'give me hands' then
-			G.GAME.round_resets.hands = G.GAME.round_resets.hands + 2
-			ease_hands_played(2)
-			card.ability.extra.uses = card.ability.extra.uses - 1
-		
-			local _card = create_card('Tarot', G.consumeables, nil, nil, nil, nil, 'c_punch_lamp')
-			_card:add_to_deck()
-			G.consumeables:emplace(_card)
+        -- Reduce uses and push into respawn queue
+        card.ability.uses = card.ability.uses - 1
 
-			_card.ability.extra.uses = card.ability.extra.uses 
-			_card.ability.extra.wish = 'give me handsize'
-		end
-		
-		if card.ability.extra.wish == 'give me handsize' then
-			G.hand.config.card_limit = G.hand.config.card_limit + 2
-		end
+        if card.ability.uses > 0 then
+            if not card.ability.id then
+                G.GAME.uniqueLampsAcquired = (G.GAME.uniqueLampsAcquired or 0) + 1
+                card.ability.id = G.GAME.uniqueLampsAcquired
+            end
+
+            -- Add to respawn table
+            G.GAME.respawnLamps = G.GAME.respawnLamps or {}
+            table.insert(G.GAME.respawnLamps, {
+                id = card.ability.id,
+                uses = card.ability.uses,
+                wish = card.ability.wish
+            })
+
+            G.GAME.spawnRespawnLamps = (G.GAME.spawnRespawnLamps or 0) + 1
+        end
+    end,
+
+    update = function(self, card)
+        -- When appearing in shop, re-apply saved state
+        if card.area and card.area.config.type == "shop" and G.GAME.respawnLamps then
+            for i, lamp in ipairs(G.GAME.respawnLamps) do
+                if not card.ability.id then
+                    card.ability.id = lamp.id
+                    card.ability.uses = lamp.uses
+                    card.ability.wish = lamp.wish
+                    table.remove(G.GAME.respawnLamps, i)
+                    break
+                end
+            end
+        end
     end,
 }
 
@@ -4326,16 +4753,17 @@ SMODS.Consumable{
 -- Save original method
 local start_dissolve_original = Card.start_dissolve
 
--- Override method
 function Card:start_dissolve(...)
+    -- Only count standard playing cards (no Jokers, Vouchers, etc.)
+    if self.config and self.config.center and G and G.hand and self.config.center.set == "Default" or self.config.center.set == "Enhanced" then
+        G.GAME.cards_destroyed_count = (G.GAME.cards_destroyed_count or 0) + 1
+        --print("Card destroyed:", self.config.center.name)
+        --print("Total destroyed so far:", G.GAME.cards_destroyed_count)
+    end
 
-    -- Initialize and increment total destroyed count
-    G.GAME.cards_destroyed_count = (G.GAME.cards_destroyed_count or 0) + 1
-
-    -- Call original method to keep normal dissolve behavior
+    -- Call original method
     return start_dissolve_original(self, ...)
 end
-
 
 SMODS.Consumable{
     key = 'space',
@@ -4346,29 +4774,36 @@ SMODS.Consumable{
         name = 'Space Dagger',
         text = {
             'Level up most played hand by {C:attention}1{}',
-			'For every {C:attention}2{} cards {C:mult}destroyed{}',
+            'For every {C:attention}4{} cards {C:mult}destroyed{}',
+			'{C:inactive}Max 10 levels{}',
         }
     },
     config = {
         extra = {
-            level = 1
+            level = 0
         }
     },
     loc_vars = function(self, info_queue, card)
+        local destroyed = G.GAME.cards_destroyed_count or 0
+        local level = math.min(10, math.floor(destroyed / 4))
         return {
-            vars = {
-                card.ability.extra.level
-            }
+            vars = {level}
         }
     end,
 
     can_use = function(self, card)
-        return true
+        local destroyed = G.GAME.cards_destroyed_count or 0
+        return destroyed >= 5 
     end,
-	
-	-- G.GAME.cards_destroyed_count is not a base game function check above if you want to implement this
+
     use = function(self, card, area, copier)
-		card.ability.extra.level = G.GAME.cards_destroyed_count / 3 --unsure why i have to divide by 3 here to get every 2 destroyed but it works
+        local destroyed = G.GAME.cards_destroyed_count or 0
+        local level_increase = math.min(10, math.floor(destroyed / 5))
+
+        if level_increase < 1 then return end -- prevent accidental triggering
+
+        card.ability.extra.level = level_increase
+
         local most_played = nil
         local max_played = 0
         for k, v in pairs(G.GAME.hands) do
@@ -4391,7 +4826,7 @@ SMODS.Consumable{
                 }
             )
 
-            for i = 1, card.ability.extra.level do
+            for i = 1, level_increase do
                 level_up_hand(card, most_played)
             end
 
@@ -4402,6 +4837,17 @@ SMODS.Consumable{
         end
     end
 }
+
+
+-- Ensure G.GAME.regular_choices exist at 0 on game start/load
+local igo = Game.init_game_object
+function Game:init_game_object(...)
+    local ret = igo(self, ...)
+    -- preserve values if loading a save; otherwise seed to 0
+    ret.punch_regular_choices = tonumber(ret.punch_regular_choices) or 0
+    return ret
+end
+
 
 SMODS.Consumable{
     key = 'corn',
@@ -4549,7 +4995,161 @@ SMODS.Consumable{
     end
 }
 
+--CREATE G.GAME.last_spectral FOR PHILOSOPHERS STONE--
+-- Save original function
+local igo = Game.init_game_object
+function Game:init_game_object()
+	local ret = igo(self)
+	ret.last_spectral = nil
+	return ret
+end
 
+-- Save original consumeable usage function
+local sgu = set_consumeable_usage
+set_consumeable_usage = function(card)
+	local ret = sgu(card)
+	
+	if card and card.config and card.config.center_key and card.ability and card.ability.consumeable then
+		if card.ability.set == 'Spectral' then
+			G.E_MANAGER:add_event(Event({
+				trigger = 'immediate',
+				func = function()
+					G.E_MANAGER:add_event(Event({
+						trigger = 'immediate',
+						func = function()
+							G.GAME.last_spectral = card.config.center_key
+							return true
+						end
+					}))
+					return true
+				end
+			}))
+		end
+	end
+
+	return ret
+end
+
+
+function count_consumables()
+  if G.consumeables.get_total_count then
+    return G.consumeables:get_total_count()
+  else
+    return #G.consumeables.cards + G.GAME.consumeable_buffer
+  end
+end
+
+
+SMODS.Consumable {
+  set = "Relics",
+  key = "phil",
+  loc_txt = {
+    name = 'Philosopher\'s Stone',
+    text = {
+      "Creates the last",
+      "{C:spectral}Spectral{} card used",
+      "during this run",
+    }
+  },
+  pos = { x = 0, y = 1 },
+  soul_pos = { x = 0, y = 2},
+  atlas = "Consumables",
+  loc_vars = function(self, info_queue, card)
+    local shard_card = G.GAME.last_spectral and G.P_CENTERS[G.GAME.last_spectral] or nil
+    return {
+      main_end = {
+        {
+          n = G.UIT.C,
+          config = { align = "bm", padding = 0.02 },
+          nodes = {
+            {
+              n = G.UIT.C,
+              config = { align = "m", colour = ((not shard_card or shard_card.key == 'c_phanta_shard') and G.C.RED or G.C.GREEN), r = 0.05, padding = 0.05 },
+              nodes = {
+                { n = G.UIT.T, config = { text = ' ' .. (shard_card and localize { type = 'name_text', key = shard_card.key, set = shard_card.set } or localize('k_none')) .. ' ', colour = G.C.UI.TEXT_LIGHT, scale = 0.3, shadow = true } },
+              }
+            }
+          }
+        }
+      }
+    }
+  end,
+  can_use = function(self, card)
+    return G.consumeables.config.card_limit >= count_consumables() and G.GAME.last_spectral ~= nil
+  end,
+  use = function(self, card, area, copier)
+    G.E_MANAGER:add_event(Event({
+      trigger = 'after',
+      delay = 0.4,
+      func = function()
+        if G.consumeables.config.card_limit > count_consumables() then
+          play_sound('timpani')
+          local new_card = create_card('Spectral', G.consumeables, nil, nil, nil, nil, G.GAME.last_spectral, 'shard')
+          new_card:add_to_deck()
+          G.consumeables:emplace(new_card)
+          card:juice_up(0.3, 0.5)
+        end
+        return true
+      end
+    }))
+    delay(0.6)
+  end,
+}
+
+SMODS.Atlas{
+    key = 'Spectrals', 
+    path = 'Spectrals.png', 
+    px = 71, 
+    py = 95 
+}
+
+SMODS.Consumable{
+    key = 'apomixis',
+    set = 'Spectral',
+    atlas = 'Spectrals',
+    pos = {x = 0, y = 0},
+    loc_txt = {
+        name = 'Apomixis',
+        text = {
+            'Add a {C:green}Clone Seal{} to {C:attention}#1#{} selected cards',
+        }
+    },
+    config = {
+        extra = {
+            cards = 1, -- configurable value
+        }
+    },
+    loc_vars = function(self, info_queue, center)
+		info_queue[#info_queue + 1] = G.P_SEALS.punch_cloneseal
+        if center and center.ability and center.ability.extra then
+            return {vars = {center.ability.extra.cards}}
+        end
+        return {vars = {}}
+    end,
+    can_use = function(self, card)
+        if G and G.hand and G.hand.highlighted and card.ability and card.ability.extra and card.ability.extra.cards then
+            if #G.hand.highlighted > 0 and #G.hand.highlighted <= card.ability.extra.cards then
+                return true
+            end
+        end
+        return false
+    end,
+    use = function(self, card, area, copier)
+		
+        for i, v in pairs(G.hand.highlighted) do
+            -- Set a random seal using a guaranteed poll method
+            v:set_seal('punch_cloneseal', true)
+
+            -- Add an event to "juice up" the card after sealing
+            G.E_MANAGER:add_event(Event({
+                func = function()
+                    v:juice_up(0.3, 0.4)
+                    return true
+                end
+            }))
+        end
+    end,
+}
 --blinds
 SMODS.Atlas({ key = "BlindChips", atlas_table = "ANIMATION_ATLAS", path = "BlindChips.png", px = 34, py = 34, frames = 21 })
 
@@ -4926,7 +5526,85 @@ SMODS.Tag{
         end
     end,
 }
+SMODS.Atlas{
+    key = 'Enhancers', 
+    path = 'Enhancers.png', 
+    px = 71, 
+    py = 95 
+}
 
+SMODS.Seal {
+    name = "Clone Seal",
+    key = 'cloneseal',
+    config = {
+        extra = { odds = 3 },
+    },
+    atlas = 'Enhancers',
+    pos = { x = 5, y = 4 },
+    badge_colour = HEX("24b068"),
+    loc_txt = {
+        label = 'Clone Seal',
+        name = 'Clone Seal',
+        text = {
+            'Clones this card, clones have no seal',
+            '{C:green}#2# in #1#{} chance to {C:mult}self-destruct',
+        }
+    },
+    loc_vars = function(self, info_queue, card)
+        return { vars = { self.config.extra.odds, G.GAME.probabilities.normal } }
+    end,
+
+    calculate = function(self, card, context)
+        if context.final_scoring_step and context.cardarea == G.play then
+            if pseudorandom('clone') < G.GAME.probabilities.normal / self.config.extra.odds then
+                -- show status BEFORE destroying
+                card_eval_status_text(
+                    context.blueprint_cards or card,
+                    "extra",
+                    nil,
+                    nil,
+                    nil,
+                    { message = ("Defect...") }
+                )
+
+                G.E_MANAGER:add_event(Event({
+                    trigger = 'after',
+                    delay = 0.1,
+                    func = function()
+                        card:start_dissolve()
+                        return true
+                    end
+                }))
+            end
+        end
+
+        if context.main_scoring and context.cardarea == G.play then
+            -- show status BEFORE cloning
+            card_eval_status_text(
+                context.blueprint_cards or card,
+                "extra",
+                nil,
+                nil,
+                nil,
+                { message = ("Cloned!") }
+            )
+
+            G.E_MANAGER:add_event(Event({
+                trigger = 'after',
+                delay = 0.1,
+                func = function()
+                    local copy = copy_card(card)
+                    G.hand:emplace(copy)
+                    copy:add_to_deck()
+                    table.insert(G.playing_cards, copy)
+                    copy:start_materialize(nil, nil)
+                    copy.seal = nil
+                    return true
+                end
+            }))
+        end
+    end,
+}
 
 -- boosters
 
