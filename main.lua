@@ -1136,7 +1136,7 @@ function Card:is_suit(suit, bypass_debuff, flush_calc)
     -- If 'stone_card' is found, modify suit behavior for Spades and Diamonds
     if stone_card then
         if flush_calc then
-            if (self.base.suit == 'Diamonds' or self.base.suit == 'Spades') == (suit == 'Diamonds' or suit == 'Spades') then
+            if (self.base.suit == 'Diamonds' or self.base.suit == 'Spades') and (suit == 'Diamonds' or suit == 'Spades') then
                 return true
             end
             -- Assuming flush_calc condition requires normal suit check
@@ -1146,7 +1146,7 @@ function Card:is_suit(suit, bypass_debuff, flush_calc)
             return false
         else
             if self.debuff and not bypass_debuff then return end
-            if (self.base.suit == 'Diamonds' or self.base.suit == 'Spades') == (suit == 'Diamonds' or suit == 'Spades') then
+            if (self.base.suit == 'Diamonds' or self.base.suit == 'Spades') and (suit == 'Diamonds' or suit == 'Spades') then
                 return true
             end
             -- Fallback suit check if no Joker effect
