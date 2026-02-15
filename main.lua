@@ -1109,7 +1109,7 @@ SMODS.Joker {
 }
 
 
--- roseta stone functions
+-- rosetta stone functions
 function Card:is_suit(suit, bypass_debuff, flush_calc)
 
 	-- Check if this card is a Stone card (hidden identity)
@@ -1163,7 +1163,7 @@ end
 SMODS.Joker {
     key = 'stone',
     loc_txt = {
-        name = 'Roseta Stone',
+        name = 'Rosetta Stone',
         text = {
             "All {C:spades}Spades{} and {C:diamonds}Diamonds{} cards",
             "are considered the same suit"
