@@ -1110,52 +1110,19 @@ SMODS.Joker {
 
 
 -- roseta stone functions
+local _punch_is_suit_ref = Card.is_suit
 function Card:is_suit(suit, bypass_debuff, flush_calc)
+    local result = _punch_is_suit_ref(self, suit, bypass_debuff, flush_calc)
+    if result or result == nil then return result end
 
-	-- Check if this card is a Stone card (hidden identity)
-    if self.config and self.config.center == G.P_CENTERS.m_stone then
-        self.base.suit = nil
-    end
-	-- Wild cards also need to exist too mb
-	if self.config and not self.debuff and self.config.center == G.P_CENTERS.m_wild then
+    if next(SMODS.find_card('j_punch_stone'))
+        and not SMODS.has_no_suit(self)
+        and (self.base.suit == 'Diamonds' or self.base.suit == 'Spades')
+        and (suit == 'Diamonds' or suit == 'Spades') then
         return true
     end
-	
-    -- Check if the 'j_punch_stone' card is present
-    local stone_card = next(SMODS.find_card('j_punch_stone'))
 
-    -- If 'stone_card' is not found, perform the normal is_suit behavior
-    if not stone_card then
-        -- Fallback to default suit check here, if issuitref is unavailable
-        if self.base.suit == suit then
-            return true
-        end
-        return false
-    end
-
-    -- If 'stone_card' is found, modify suit behavior for Spades and Diamonds
-    if stone_card then
-        if flush_calc then
-            if (self.base.suit == 'Diamonds' or self.base.suit == 'Spades') == (suit == 'Diamonds' or suit == 'Spades') then
-                return true
-            end
-            -- Assuming flush_calc condition requires normal suit check
-            if self.base.suit == suit then
-                return true
-            end
-            return false
-        else
-            if self.debuff and not bypass_debuff then return end
-            if (self.base.suit == 'Diamonds' or self.base.suit == 'Spades') == (suit == 'Diamonds' or suit == 'Spades') then
-                return true
-            end
-            -- Fallback suit check if no Joker effect
-            if self.base.suit == suit then
-                return true
-            end
-            return false
-        end
-    end
+    return false
 end
 
 
