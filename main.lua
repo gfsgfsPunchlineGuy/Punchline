@@ -5567,6 +5567,7 @@ SMODS.Seal {
                     { message = ("Defect...") }
                 )
 
+                card.destroyed = true
                 G.E_MANAGER:add_event(Event({
                     trigger = 'after',
                     delay = 0.1,
