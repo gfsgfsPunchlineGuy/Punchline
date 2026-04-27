@@ -3703,8 +3703,8 @@ SMODS.Consumable{
     loc_txt = {
         name = 'SCP-963-1',
         text = {
-            '{C:mult}Destroy {C:attention}#1#{} selected things',
-            'Create a pack for that respective thing',
+            '{C:mult}Destroy {C:attention}#1#{} selected item',
+            'Create a pack for that respective item',
         }
     },
     config = {
