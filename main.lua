@@ -1109,7 +1109,7 @@ SMODS.Joker {
 }
 
 
--- roseta stone functions
+-- rosetta stone functions
 local _punch_is_suit_ref = Card.is_suit
 function Card:is_suit(suit, bypass_debuff, flush_calc)
     local result = _punch_is_suit_ref(self, suit, bypass_debuff, flush_calc)
@@ -1130,7 +1130,7 @@ end
 SMODS.Joker {
     key = 'stone',
     loc_txt = {
-        name = 'Roseta Stone',
+        name = 'Rosetta Stone',
         text = {
             "All {C:spades}Spades{} and {C:diamonds}Diamonds{} cards",
             "are considered the same suit"
